@@ -1,0 +1,9 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+*.py[cod]
+models/*.joblib
+models/metrics.json
+tests
+README.md
