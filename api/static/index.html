@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Explore a Parkinson's speech-feature machine-learning demo."
+    >
+    <meta name="theme-color" content="#f5f7f5">
+    <title>Parkinson's ML Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Parkinson's ML Studio home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M4 17h5l3-9 6 17 4-11 2 3h4" />
+            </svg>
+          </span>
+          <span class="brand-name">voice<span>signal</span></span>
+        </a>
+        <nav class="top-nav" aria-label="Main navigation">
+          <a class="nav-link active" href="#analyze">Studio</a>
+          <a class="nav-link" href="/docs" target="_blank" rel="noreferrer">API docs <span aria-hidden="true">↗</span></a>
+        </nav>
+        <div class="service-indicator">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="service-status" role="status">Connecting to model</span>
+        </div>
+      </header>
+
+      <main id="analyze">
+        <section class="intro">
+          <div class="intro-copy">
+            <p class="eyebrow"><span class="eyebrow-line"></span> MACHINE LEARNING DEMO</p>
+            <h1>A closer look at<br><span>voice signals.</span></h1>
+            <p class="intro-text">
+              Explore how a model classifies precomputed speech features.
+              Bring a feature CSV or enter values to get an instant result.
+            </p>
+            <div class="intro-meta">
+              <span class="meta-icon" aria-hidden="true">⌁</span>
+              <span>753 model features</span>
+              <span class="meta-divider"></span>
+              <span>Interactive prediction</span>
+            </div>
+          </div>
+          <div class="signal-card" aria-label="Illustrative voice waveform">
+            <div class="signal-card-top">
+              <span class="signal-label"><span class="live-pulse"></span> SIGNAL OVERVIEW</span>
+              <span class="signal-window">FEATURE SPACE</span>
+            </div>
+            <div class="waveform" aria-hidden="true">
+              <span style="--h:20%"></span><span style="--h:34%"></span>
+              <span style="--h:26%"></span><span style="--h:45%"></span>
+              <span style="--h:36%"></span><span style="--h:58%"></span>
+              <span style="--h:42%"></span><span style="--h:74%"></span>
+              <span style="--h:50%"></span><span style="--h:88%"></span>
+              <span style="--h:56%"></span><span style="--h:66%"></span>
+              <span style="--h:39%"></span><span style="--h:79%"></span>
+              <span style="--h:48%"></span><span style="--h:96%"></span>
+              <span style="--h:63%"></span><span style="--h:72%"></span>
+              <span style="--h:43%"></span><span style="--h:83%"></span>
+              <span style="--h:55%"></span><span style="--h:68%"></span>
+              <span style="--h:34%"></span><span style="--h:52%"></span>
+              <span style="--h:29%"></span><span style="--h:44%"></span>
+              <span style="--h:22%"></span><span style="--h:36%"></span>
+              <span style="--h:17%"></span><span style="--h:30%"></span>
+              <span style="--h:14%"></span><span style="--h:24%"></span>
+              <span style="--h:12%"></span><span style="--h:20%"></span>
+            </div>
+            <div class="signal-axis"><span>0.0 s</span><span>FEATURE VECTOR</span><span>1.0 s</span></div>
+            <div class="signal-card-foot">
+              <div><span class="foot-label">MODEL INPUT</span><strong>Acoustic feature set</strong></div>
+              <span class="foot-chip">CSV · 753 columns</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="notice" aria-label="Important information">
+          <span class="notice-icon" aria-hidden="true">i</span>
+          <p>
+            <strong>Research demonstration only.</strong>
+            This model is not a medical device and does not diagnose Parkinson's disease.
+            It accepts precomputed features, not audio recordings.
+          </p>
+        </section>
+
+        <section class="workspace" aria-labelledby="workspace-title">
+          <div class="workspace-heading">
+            <div>
+              <p class="eyebrow">PREDICTION WORKSPACE</p>
+              <h2 id="workspace-title">Run an analysis</h2>
+            </div>
+            <span class="workspace-step"><span>01</span> INPUT <i></i><span>02</span> RESULT</span>
+          </div>
+
+          <div class="workspace-grid">
+            <section class="input-panel panel" aria-labelledby="input-title">
+              <div class="panel-heading">
+                <div class="panel-heading-icon" aria-hidden="true">01</div>
+                <div>
+                  <h3 id="input-title">Your feature data</h3>
+                  <p>Upload a CSV row or enter all model features.</p>
+                </div>
+              </div>
+
+              <div class="mode-switch" role="tablist" aria-label="Feature input method">
+                <button class="mode-tab selected" id="upload-tab" type="button" role="tab" aria-selected="true" aria-controls="upload-panel">Upload CSV</button>
+                <button class="mode-tab" id="manual-tab" type="button" role="tab" aria-selected="false" aria-controls="manual-panel">Enter manually</button>
+              </div>
+
+              <div class="mode-panel" id="upload-panel" role="tabpanel" aria-labelledby="upload-tab">
+                <label class="dropzone" id="dropzone" for="csv-file">
+                  <span class="upload-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M12 15V4m0 0L8 8m4-4 4 4M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+                    </svg>
+                  </span>
+                  <span class="dropzone-title">Drop your feature CSV here</span>
+                  <span class="dropzone-subtitle">or <span class="browse-link">browse files</span></span>
+                  <span class="file-hint">CSV with named columns · one or more rows</span>
+                  <input id="csv-file" type="file" accept=".csv,text/csv">
+                </label>
+                <div class="file-loaded" id="file-loaded" hidden>
+                  <span class="file-badge" aria-hidden="true">CSV</span>
+                  <div class="file-details">
+                    <strong id="file-name"></strong>
+                    <span id="file-summary"></span>
+                  </div>
+                  <button class="text-button" id="remove-file" type="button" aria-label="Remove uploaded CSV">Remove</button>
+                </div>
+                <div class="row-picker" id="row-picker" hidden>
+                  <label for="row-select">Choose a row to analyze</label>
+                  <div class="row-picker-control">
+                    <select id="row-select"></select>
+                    <button class="button button-secondary" id="load-row" type="button">Load row</button>
+                  </div>
+                  <p class="field-help">Identifier and target columns are ignored. Use a single example row or a compatible feature dataset.</p>
+                </div>
+                <div class="upload-help">
+                  <span class="help-check" aria-hidden="true">✓</span>
+                  <p>Include a header row with the feature names. The model expects all <strong>753 numeric features</strong>.</p>
+                </div>
+              </div>
+
+              <div class="mode-panel" id="manual-panel" role="tabpanel" aria-labelledby="manual-tab" hidden>
+                <div class="manual-summary">
+                  <span id="manual-progress">0 of 753 features filled</span>
+                  <button class="text-button" id="clear-fields" type="button">Clear all</button>
+                </div>
+                <label class="search-wrap" for="feature-search">
+                  <span aria-hidden="true">⌕</span>
+                  <input id="feature-search" type="search" placeholder="Find a feature, e.g. jitter" autocomplete="off">
+                  <kbd>⌘ K</kbd>
+                </label>
+                <div class="feature-groups" id="feature-groups">
+                  <div class="loading-state"><span class="spinner"></span> Loading feature schema…</div>
+                </div>
+              </div>
+
+              <div class="form-error" id="form-error" role="alert" hidden></div>
+              <button class="button button-primary analyze-button" id="analyze-button" type="button" disabled>
+                <span>Run prediction</span>
+                <span class="button-arrow" aria-hidden="true">→</span>
+              </button>
+              <p class="privacy-note"><span aria-hidden="true">⌑</span> Your input is sent to the model API for prediction.</p>
+            </section>
+
+            <section class="result-panel panel" aria-labelledby="result-title" aria-live="polite">
+              <div class="panel-heading">
+                <div class="panel-heading-icon result-icon" aria-hidden="true">02</div>
+                <div>
+                  <h3 id="result-title">Model output</h3>
+                  <p>Your prediction will appear here.</p>
+                </div>
+              </div>
+              <div class="result-empty" id="result-empty">
+                <div class="empty-art" aria-hidden="true">
+                  <div class="empty-orbit orbit-one"></div>
+                  <div class="empty-orbit orbit-two"></div>
+                  <div class="empty-core"><span>v</span></div>
+                  <i class="orbit-dot dot-one"></i><i class="orbit-dot dot-two"></i>
+                  <i class="orbit-dot dot-three"></i>
+                </div>
+                <h4>Ready when you are</h4>
+                <p>Add your feature data to see the model's output and confidence scores.</p>
+              </div>
+              <div class="result-loading" id="result-loading" hidden>
+                <span class="spinner"></span>
+                <strong>Analyzing feature vector</strong>
+                <span>Sending securely to the prediction API…</span>
+              </div>
+              <div class="result-content" id="result-content" hidden>
+                <div class="result-kicker">PREDICTED MODEL CLASS</div>
+                <div class="prediction-class" id="prediction-class">Class —</div>
+                <p class="result-caption">Classifier output · not a diagnosis</p>
+                <div class="probability-heading">
+                  <h4>Class probabilities</h4>
+                  <span>MODEL CONFIDENCE</span>
+                </div>
+                <div class="probability-list" id="probability-list"></div>
+                <div class="result-foot">
+                  <span class="result-check" aria-hidden="true">✓</span>
+                  <span>Analysis complete</span>
+                  <span class="result-timestamp" id="result-timestamp"></span>
+                </div>
+                <button class="button button-secondary another-button" id="another-button" type="button">Run another prediction <span aria-hidden="true">↻</span></button>
+              </div>
+              <div class="result-error" id="result-error" role="alert" hidden></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="bottom-strip">
+          <div class="bottom-item"><span class="bottom-symbol">01</span><span><strong>Precomputed features</strong><small>Audio feature extraction is not included.</small></span></div>
+          <span class="bottom-separator"></span>
+          <div class="bottom-item"><span class="bottom-symbol">02</span><span><strong>Model probabilities</strong><small>Scores reflect this model's output only.</small></span></div>
+          <span class="bottom-separator"></span>
+          <div class="bottom-item"><span class="bottom-symbol">03</span><span><strong>Demo use only</strong><small>Not validated for clinical decisions.</small></span></div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <a class="brand footer-brand" href="/">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none"><path d="M4 17h5l3-9 6 17 4-11 2 3h4" /></svg>
+          </span>
+          <span class="brand-name">voice<span>signal</span></span>
+        </a>
+        <span>Parkinson's speech-feature classifier · MLOps demo</span>
+        <a href="/docs" target="_blank" rel="noreferrer">Developer API <span aria-hidden="true">↗</span></a>
+      </footer>
+    </div>
+  </body>
+</html>

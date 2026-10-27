@@ -7,6 +7,7 @@ from typing import Any
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -95,3 +96,10 @@ def predict(request: PredictionRequest) -> PredictionResponse:
         prediction=prediction,
         probabilities=class_probabilities,
     )
+
+
+app.mount(
+    "/",
+    StaticFiles(directory=Path(__file__).resolve().parent / "static", html=True),
+    name="frontend",
+)

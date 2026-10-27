@@ -52,13 +52,20 @@ Identifiers are excluded from model features; the `gender` feature is retained.
 
 ## API
 
+- `GET /` — interactive feature-analysis frontend.
 - `GET /health` — liveness check.
 - `GET /schema` — lists all required feature names.
 - `POST /predict` — returns the predicted class and per-class probabilities.
 
+Open the frontend at `/`. Upload a feature CSV with named columns and one or
+more rows, choose a row, and run a prediction; identifier and target columns
+are ignored. The alternate manual-entry mode exposes searchable, grouped
+fields, but still requires all 753 numeric model features. Raw audio is not
+accepted or analyzed.
+
 The prediction body must contain every feature returned by `/schema`, each
 mapped to a finite numeric value. Missing or unknown feature names are rejected.
-For example, fetch the schema and submit a JSON body shaped like:
+For example, a complete request must include every schema feature:
 
 ```json
 {

@@ -23,6 +23,24 @@ def test_health(client: TestClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_frontend_is_served_at_root(client: TestClient) -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Parkinson's ML Studio" in response.text
+    assert "/styles.css" in response.text
+
+
+def test_frontend_assets_are_served(client: TestClient) -> None:
+    css_response = client.get("/styles.css")
+    js_response = client.get("/app.js")
+
+    assert css_response.status_code == 200
+    assert "--green-deep" in css_response.text
+    assert js_response.status_code == 200
+    assert 'fetch("/predict"' in js_response.text
+
+
 def test_schema_returns_required_feature_names(client: TestClient) -> None:
     response = client.get("/schema")
 
