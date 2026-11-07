@@ -5,6 +5,8 @@ Train and serve a binary classifier using the precomputed speech features in
 raw audio recordings.
 It is a demonstration classifier, not a medical diagnostic tool.
 
+**Live demo:** [parkinsons-mlops.onrender.com](https://parkinsons-mlops.onrender.com)
+
 `data analysis.py` is included unchanged as the original exploratory script;
 the copy in the neighboring `parkinson aiml` folder is also left untouched.
 The deployment uses the separate training and serving code in `src/` and `api/`.
@@ -64,6 +66,10 @@ Identifiers are excluded from model features; the `gender` feature is retained.
 - `GET /schema` — lists all required feature names.
 - `POST /predict` — returns the predicted class and per-class probabilities.
 
+Interactive API documentation and the OpenAPI schema are intentionally disabled
+on the public service. `/docs`, `/redoc`, and `/openapi.json` return 404. The
+prediction and schema endpoints remain available to the website and API clients.
+
 Open the frontend at `/`. Upload a feature CSV with named columns and one or
 more rows, choose a row, and run a prediction; identifier and target columns
 are ignored. The alternate manual-entry mode exposes searchable, grouped
@@ -72,7 +78,8 @@ accepted or analyzed.
 
 The prediction body must contain every feature returned by `/schema`, each
 mapped to a finite numeric value. Missing or unknown feature names are rejected.
-For example, a complete request must include every schema feature:
+The abbreviated request below illustrates the JSON shape; a real request must
+include every schema feature:
 
 ```json
 {
@@ -112,7 +119,9 @@ wake on the next request.
 2. In Render, choose **New → Blueprint** and connect that repository.
 3. Select `render.yaml` when prompted, review the service settings, and deploy.
 4. Open the Render service URL and use `/health` to check that the service is
-   responding. Interactive API documentation is disabled on the public service.
+   responding. The default service URL is
+   `https://parkinsons-mlops.onrender.com/`; interactive API documentation is
+   disabled on the public service.
 
 The API is public and does not include authentication. Anyone with its URL can
 submit predictions. Do not use it as a medical diagnostic tool.
