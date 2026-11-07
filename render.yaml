@@ -6,3 +6,8 @@ services:
     buildCommand: pip install -r requirements.txt && python -m src.train
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
+    envVars:
+      - key: SITE_URL
+        value: https://parkinsons-mlops.onrender.com
+      - key: PLAUSIBLE_DOMAIN
+        value: parkinsons-mlops.onrender.com

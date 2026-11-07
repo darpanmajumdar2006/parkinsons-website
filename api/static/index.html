@@ -8,7 +8,26 @@
       content="Explore a Parkinson's speech-feature machine-learning demo."
     >
     <meta name="theme-color" content="#f5f7f5">
-    <title>Parkinson's ML Studio</title>
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="__SITE_URL__/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="VoiceSignal">
+    <meta property="og:title" content="Parkinson's ML Studio | VoiceSignal">
+    <meta property="og:description" content="Explore how a machine-learning model classifies precomputed speech features. Research demonstration only; not a diagnosis.">
+    <meta property="og:url" content="__SITE_URL__/">
+    <meta property="og:image" content="__SITE_URL__/og-image.png">
+    <meta property="og:image:alt" content="VoiceSignal Parkinson's speech-feature machine-learning demo">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Parkinson's ML Studio | VoiceSignal">
+    <meta name="twitter:description" content="Explore how a machine-learning model classifies precomputed speech features. Research demonstration only; not a diagnosis.">
+    <meta name="twitter:image" content="__SITE_URL__/og-image.png">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <title>Parkinson's ML Studio | VoiceSignal</title>
+    <!-- PLAUSIBLE_ANALYTICS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -31,7 +50,6 @@
         </a>
         <nav class="top-nav" aria-label="Main navigation">
           <a class="nav-link active" href="#analyze">Studio</a>
-          <a class="nav-link" href="/docs" target="_blank" rel="noreferrer">API docs <span aria-hidden="true">↗</span></a>
         </nav>
         <div class="service-indicator">
           <span class="status-dot" id="status-dot"></span>
@@ -48,6 +66,9 @@
               Explore how a model classifies precomputed speech features.
               Bring a feature CSV or enter values to get an instant result.
             </p>
+            <a class="button button-primary intro-cta" href="#workspace">
+              Start an analysis <span class="button-arrow" aria-hidden="true">→</span>
+            </a>
             <div class="intro-meta">
               <span class="meta-icon" aria-hidden="true">⌁</span>
               <span>753 model features</span>
@@ -96,7 +117,7 @@
           </p>
         </section>
 
-        <section class="workspace" aria-labelledby="workspace-title">
+        <section class="workspace" id="workspace" aria-labelledby="workspace-title">
           <div class="workspace-heading">
             <div>
               <p class="eyebrow">PREDICTION WORKSPACE</p>
@@ -165,7 +186,7 @@
                   <kbd>⌘ K</kbd>
                 </label>
                 <div class="feature-groups" id="feature-groups">
-                  <div class="loading-state"><span class="spinner"></span> Loading feature schema…</div>
+                  <div class="loading-state" role="status" aria-live="polite"><span class="spinner"></span> Loading feature schema…</div>
                 </div>
               </div>
 
@@ -177,7 +198,7 @@
               <p class="privacy-note"><span aria-hidden="true">⌑</span> Your input is sent to the model API for prediction.</p>
             </section>
 
-            <section class="result-panel panel" aria-labelledby="result-title" aria-live="polite">
+            <section class="result-panel panel" aria-labelledby="result-title" aria-live="polite" aria-busy="false">
               <div class="panel-heading">
                 <div class="panel-heading-icon result-icon" aria-hidden="true">02</div>
                 <div>
@@ -196,7 +217,7 @@
                 <h4>Ready when you are</h4>
                 <p>Add your feature data to see the model's output and confidence scores.</p>
               </div>
-              <div class="result-loading" id="result-loading" hidden>
+              <div class="result-loading" id="result-loading" role="status" aria-live="polite" hidden>
                 <span class="spinner"></span>
                 <strong>Analyzing feature vector</strong>
                 <span>Sending securely to the prediction API…</span>
@@ -239,7 +260,7 @@
           <span class="brand-name">voice<span>signal</span></span>
         </a>
         <span>Parkinson's speech-feature classifier · MLOps demo</span>
-        <a href="/docs" target="_blank" rel="noreferrer">Developer API <span aria-hidden="true">↗</span></a>
+        <a href="/privacy">Privacy</a>
       </footer>
     </div>
   </body>

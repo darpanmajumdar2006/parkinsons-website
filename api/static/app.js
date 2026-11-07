@@ -27,6 +27,7 @@ const elements = {
   manualProgress: document.querySelector("#manual-progress"),
   clearFields: document.querySelector("#clear-fields"),
   analyzeButton: document.querySelector("#analyze-button"),
+  resultPanel: document.querySelector(".result-panel"),
   formError: document.querySelector("#form-error"),
   resultEmpty: document.querySelector("#result-empty"),
   resultLoading: document.querySelector("#result-loading"),
@@ -375,6 +376,7 @@ async function runPrediction() {
   elements.resultEmpty.hidden = true;
   elements.resultContent.hidden = true;
   elements.resultLoading.hidden = false;
+  elements.resultPanel.setAttribute("aria-busy", "true");
   elements.analyzeButton.disabled = true;
 
   try {
@@ -399,6 +401,7 @@ async function runPrediction() {
     );
   } finally {
     elements.resultLoading.hidden = true;
+    elements.resultPanel.setAttribute("aria-busy", "false");
     elements.analyzeButton.disabled = false;
   }
 }

@@ -1,16 +1,20 @@
+from functools import lru_cache
+from html import escape
 import math
 import os
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 DEFAULT_MODEL_PATH = (
     Path(__file__).resolve().parents[1]
     / "models"
@@ -21,6 +25,9 @@ app = FastAPI(
     title="Parkinson's Speech Feature Classifier",
     description="Predicts a class from precomputed speech-feature values.",
     version="1.0.0",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
 
@@ -59,6 +66,64 @@ def load_model_bundle() -> dict[str, Any]:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+def public_site_url() -> str:
+    site_url = os.environ.get(
+        "SITE_URL", "https://parkinsons-mlops.onrender.com"
+    ).rstrip("/")
+    parsed_url = urlsplit(site_url)
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        raise RuntimeError("SITE_URL must be an absolute HTTP or HTTPS URL.")
+    return site_url
+
+
+def render_page(filename: str) -> HTMLResponse:
+    site_url = public_site_url()
+    plausible_domain = os.environ.get("PLAUSIBLE_DOMAIN", "").strip()
+    analytics_script = ""
+    if plausible_domain:
+        analytics_script = (
+            '<script defer data-domain="'
+            + escape(plausible_domain, quote=True)
+            + '" src="https://plausible.io/js/script.js"></script>'
+        )
+
+    page = (STATIC_DIR / filename).read_text(encoding="utf-8")
+    page = page.replace("__SITE_URL__", escape(site_url, quote=True))
+    page = page.replace("<!-- PLAUSIBLE_ANALYTICS -->", analytics_script)
+    return HTMLResponse(page)
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def homepage() -> HTMLResponse:
+    return render_page("index.html")
+
+
+@app.get("/privacy", response_class=HTMLResponse, include_in_schema=False)
+def privacy_policy() -> HTMLResponse:
+    return render_page("privacy.html")
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
+def robots() -> PlainTextResponse:
+    site_url = public_site_url()
+    return PlainTextResponse(
+        f"User-agent: *\nAllow: /\nSitemap: {site_url}/sitemap.xml\n"
+    )
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+def sitemap() -> Response:
+    site_url = public_site_url()
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f"<url><loc>{escape(site_url)}/</loc></url>"
+        f"<url><loc>{escape(site_url)}/privacy</loc></url>"
+        "</urlset>"
+    )
+    return Response(content=body, media_type="application/xml")
 
 
 @app.get("/schema")
@@ -100,6 +165,6 @@ def predict(request: PredictionRequest) -> PredictionResponse:
 
 app.mount(
     "/",
-    StaticFiles(directory=Path(__file__).resolve().parent / "static", html=True),
+    StaticFiles(directory=STATIC_DIR, html=True),
     name="frontend",
 )
