@@ -49,6 +49,13 @@ class PredictionResponse(BaseModel):
     probabilities: dict[str, float]
 
 
+class EvaluationResponse(BaseModel):
+    metrics: dict[str, float]
+    confusion_matrix: list[list[int]]
+    class_labels: list[int]
+    test_size: float
+
+
 @lru_cache(maxsize=1)
 def load_model_bundle() -> dict[str, Any]:
     model_path = Path(os.environ.get("MODEL_PATH", DEFAULT_MODEL_PATH))
@@ -130,6 +137,18 @@ def sitemap() -> Response:
 def feature_schema() -> dict[str, list[str]]:
     bundle = load_model_bundle()
     return {"features": bundle["feature_names"]}
+
+
+@app.get("/evaluation", response_model=EvaluationResponse)
+def model_evaluation() -> EvaluationResponse:
+    bundle = load_model_bundle()
+    evaluation = bundle.get("evaluation")
+    if not isinstance(evaluation, dict):
+        raise HTTPException(
+            status_code=503,
+            detail="Model evaluation data is unavailable. Retrain the model.",
+        )
+    return EvaluationResponse.model_validate(evaluation)
 
 
 @app.post("/predict", response_model=PredictionResponse)

@@ -1,85 +1,86 @@
-# Parkinson's Speech-Feature MLOps Service
+# Parkinson's Speech-Feature ML Demo
 
-Train and serve a binary classifier using the precomputed speech features in
-`data/pd_dataset.csv`. This project accepts feature values; it does not process
-raw audio recordings.
-It is a demonstration classifier, not a medical diagnostic tool.
+A web app and API for experimenting with a binary classifier trained on
+precomputed Parkinson's speech-feature data. It accepts numeric feature values;
+it does not record, upload, or analyze audio.
 
-**Live demo:** [parkinsons-mlops.onrender.com](https://parkinsons-mlops.onrender.com)
+**Demo:** [parkinsons-mlops.onrender.com](https://parkinsons-mlops.onrender.com)
 
-`data analysis.py` is included unchanged as the original exploratory script;
-the copy in the neighboring `parkinson aiml` folder is also left untouched.
-The deployment uses the separate training and serving code in `src/` and `api/`.
+> **Research and educational use only.** This project is not a medical device
+> and must not be used to diagnose, treat, or make health decisions.
 
-## Project layout
+## What it does
 
-```text
-parkinsons-mlops/
-├── data/
-├── models/
-├── src/
-│   ├── preprocessing.py
-│   └── train.py
-├── api/
-│   ├── main.py
-│   └── static/
-│       ├── index.html
-│       ├── privacy.html
-│       ├── 404.html
-│       └── site assets
-├── tests/
-│   └── test_api.py
-├── requirements.txt
-├── Dockerfile
-├── .gitignore
-└── README.md
-```
+- Accepts a CSV containing named speech-feature columns or manual numeric input.
+- Lets you select a row from a CSV and displays the predicted class and model
+  probabilities.
+- Shows the Random Forest's held-out accuracy, precision, recall, F1 score,
+  ROC-AUC, and confusion matrix on the homepage.
+- Trains a scikit-learn pipeline using a stratified holdout split, then saves a
+  model for serving.
+- Serves a static website and JSON API from FastAPI.
+
+The model expects all **753 numeric features**. The feature names are available
+from `GET /schema`. The web app guides CSV and manual input; raw audio is not
+supported.
 
 ## Run locally
 
-Use Python 3.12 or newer. From this directory:
+Use Python 3.12 or newer. Run these commands from the project directory:
 
-```bash
+```powershell
 python -m venv .venv
-```
-
-Activate the virtual environment, then install dependencies and train:
-
-```bash
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python -m src.train
-pytest -q
-uvicorn api.main:app --host 0.0.0.0 --port 8000
+python -m uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Training writes the deployable model to `models/parkinsons_model.joblib` and
-holdout metrics to `models/metrics.json`. The model is evaluated on a
-stratified 20% holdout split, then refit on all clean rows for serving.
-Identifiers are excluded from model features; the `gender` feature is retained.
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). To run the tests, open
+another terminal in the project directory, activate the environment, and run:
 
-## API
+```powershell
+python -m pytest -q tests
+```
 
-- `GET /` — interactive feature-analysis frontend.
-- `GET /privacy` — privacy policy for prediction input and optional analytics.
-- `GET /robots.txt` and `GET /sitemap.xml` — crawler guidance and public page URLs.
-- `GET /health` — liveness check.
-- `GET /schema` — lists all required feature names.
-- `POST /predict` — returns the predicted class and per-class probabilities.
+Training reads `data/pd_dataset.csv`, drops rows with missing values, excludes
+identifier columns, and uses the `class` column as the target. It evaluates a
+stratified 20% holdout split, then fits the serving model on all clean rows.
+The model and holdout metrics are written to:
 
-Interactive API documentation and the OpenAPI schema are intentionally disabled
-on the public service. `/docs`, `/redoc`, and `/openapi.json` return 404. The
-prediction and schema endpoints remain available to the website and API clients.
+- `models/parkinsons_model.joblib`
+- `models/metrics.json`
 
-Open the frontend at `/`. Upload a feature CSV with named columns and one or
-more rows, choose a row, and run a prediction; identifier and target columns
-are ignored. The alternate manual-entry mode exposes searchable, grouped
-fields, but still requires all 753 numeric model features. Raw audio is not
-accepted or analyzed.
+The dataset has a grouped header row, which the loader accounts for. The
+classifier is a class-balanced random forest with 200 trees.
 
-The prediction body must contain every feature returned by `/schema`, each
-mapped to a finite numeric value. Missing or unknown feature names are rejected.
-The abbreviated request below illustrates the JSON shape; a real request must
-include every schema feature:
+## Website and API
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Prediction website |
+| `/privacy` | Privacy information |
+| `/health` | Service health check |
+| `/schema` | Required model feature names |
+| `/evaluation` | Saved held-out metrics and confusion matrix |
+| `/predict` | JSON prediction endpoint |
+| `/robots.txt` | Crawler rules |
+| `/sitemap.xml` | Public website URLs |
+
+Interactive API documentation and the OpenAPI schema are intentionally
+disabled: `/docs`, `/redoc`, and `/openapi.json` return 404. This only hides
+documentation; it does **not** disable or protect the API. The service is public
+and has no authentication, so anyone with its URL can submit predictions.
+
+`GET /evaluation` returns the metrics, confusion matrix, class labels, and test
+split fraction calculated during training. These metrics use a stratified
+20% holdout split and are distinct from the probabilities returned for an
+individual prediction.
+
+`POST /predict` accepts a JSON object with every feature returned by `/schema`,
+mapped to finite numbers. Missing, unexpected, or non-finite values are
+rejected. For example, the request has this shape (the abbreviated feature
+object is not sufficient for a real request):
 
 ```json
 {
@@ -90,55 +91,66 @@ include every schema feature:
 }
 ```
 
-The example is abbreviated: include all schema features in a real prediction.
-The response contains a `prediction` (`0` or `1`) and a `probabilities` map.
+The response contains a `prediction` (`0` or `1`) and a `probabilities` object
+keyed by class. These probabilities are model outputs, not medical confidence
+or clinical evidence.
 
-## Build and run with Docker
+## Deploy to Render
 
-Docker builds install the dependencies and train the model from the bundled
-CSV, so a model artifact does not need to be committed:
+The `render.yaml` Blueprint defines a free Python web service. It installs
+dependencies, trains the model during the build, and starts the API with
+Uvicorn. To deploy:
 
-```bash
+1. Push this project to a GitHub repository.
+2. In Render, choose **New → Blueprint** and connect that repository.
+3. Select this project's `render.yaml` and deploy the service.
+4. Open the service URL and check `/health`. The default URL configured in this
+   project is [https://parkinsons-mlops.onrender.com](https://parkinsons-mlops.onrender.com).
+
+Free Render services may spin down while idle, so the first request after a
+period of inactivity may take longer.
+
+### Deployment settings
+
+- `SITE_URL` is the canonical public HTTP(S) origin used for metadata, robots,
+  and the sitemap. Update it if the deployed URL or custom domain differs.
+- `PLAUSIBLE_DOMAIN` controls the optional Plausible Analytics script. The
+  Blueprint sets it to the default service domain; register that domain with
+  Plausible to receive reports. Leave it unset to disable the script.
+- `MODEL_PATH` optionally overrides the model artifact path. By default, the
+  app loads `models/parkinsons_model.joblib`.
+- Render provides `PORT` to Uvicorn.
+
+## Run with Docker
+
+The Docker image installs dependencies and trains the model from the bundled
+dataset during its build:
+
+```powershell
 docker build -t parkinsons-mlops .
 docker run --rm -p 8000:8000 parkinsons-mlops
 ```
 
-The service listens on port `8000`. Configure `PORT` to use a different
-container port. The model path can be overridden with `MODEL_PATH` when
-running the API outside the provided Docker image.
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). The container uses port
+`8000` by default; `PORT` and `MODEL_PATH` can be overridden when running it.
 
-## Deploy publicly on Render
+## Project structure
 
-The `render.yaml` Blueprint deploys this API as a Python web service and trains
-the model during the build. It uses Render's Free plan and does not require
-Docker. Free services can spin down when idle and may take about a minute to
-wake on the next request.
-
-1. Put this project in its own GitHub repository. Do not push it to the
-   unrelated repository in the parent workspace.
-2. In Render, choose **New → Blueprint** and connect that repository.
-3. Select `render.yaml` when prompted, review the service settings, and deploy.
-4. Open the Render service URL and use `/health` to check that the service is
-   responding. The default service URL is
-   `https://parkinsons-mlops.onrender.com/`; interactive API documentation is
-   disabled on the public service.
-
-The API is public and does not include authentication. Anyone with its URL can
-submit predictions. Do not use it as a medical diagnostic tool.
-
-## Website metadata and analytics
-
-The site includes page-specific titles and descriptions, Open Graph/Twitter share
-metadata, a branded share image and favicon assets, a custom 404 page, and
-accessible loading feedback for schema loading and predictions. The homepage CTA
-links directly to the analysis workspace. Decorative in-page illustrations are
-hidden from assistive technology; the social share image has descriptive
-alternative metadata.
-
-The Render Blueprint sets `SITE_URL` to the service's public URL and enables
-Plausible Analytics for that domain. Register the same domain in your Plausible
-account to view aggregate visit reports. For a custom domain or another
-deployment, update `SITE_URL` to the canonical HTTPS origin and set
-`PLAUSIBLE_DOMAIN` to the registered Plausible site domain. Leave
-`PLAUSIBLE_DOMAIN` unset to disable the analytics script. The privacy policy is
-available at `/privacy`.
+```text
+parkinsons-mlops/
+├── api/
+│   ├── main.py
+│   └── static/          # Website, privacy page, 404 page, and image assets
+├── data/
+│   └── pd_dataset.csv
+├── models/              # Generated model and training metrics
+├── src/
+│   ├── preprocessing.py
+│   └── train.py
+├── tests/
+│   ├── test_api.py
+│   └── test_train.py
+├── Dockerfile
+├── render.yaml
+└── requirements.txt
+```

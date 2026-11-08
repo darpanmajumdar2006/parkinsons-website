@@ -11,7 +11,22 @@ from api import main
 def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     model = DummyClassifier(strategy="constant", constant=1)
     model.fit(np.array([[0.0, 0.0], [1.0, 1.0]]), np.array([0, 1]))
-    bundle = {"feature_names": ["feature_a", "feature_b"], "model": model}
+    bundle = {
+        "feature_names": ["feature_a", "feature_b"],
+        "model": model,
+        "evaluation": {
+            "metrics": {
+                "accuracy": 0.9,
+                "precision": 0.85,
+                "recall": 0.95,
+                "f1": 0.9,
+                "roc_auc": 0.92,
+            },
+            "confusion_matrix": [[8, 1], [1, 10]],
+            "class_labels": [0, 1],
+            "test_size": 0.2,
+        },
+    }
     monkeypatch.setattr(main, "load_model_bundle", lambda: bundle)
     return TestClient(main.app)
 
@@ -32,6 +47,7 @@ def test_frontend_is_served_at_root(client: TestClient) -> None:
     assert 'property="og:image"' in response.text
     assert 'property="og:image:alt"' in response.text
     assert 'href="#workspace"' in response.text
+    assert 'id="evaluation-title"' in response.text
     assert "/styles.css" in response.text
     assert "/docs" not in response.text
     assert "Developer API" not in response.text
@@ -94,8 +110,10 @@ def test_frontend_assets_are_served(client: TestClient) -> None:
 
     assert css_response.status_code == 200
     assert "--green-deep" in css_response.text
+    assert ".confusion-table" in css_response.text
     assert js_response.status_code == 200
     assert 'fetch("/predict"' in js_response.text
+    assert 'fetch("/evaluation")' in js_response.text
     for asset in (
         "/favicon.svg",
         "/favicon-16x16.png",
@@ -116,6 +134,43 @@ def test_schema_returns_required_feature_names(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json() == {"features": ["feature_a", "feature_b"]}
+
+
+def test_evaluation_returns_holdout_metrics_and_confusion_matrix(
+    client: TestClient,
+) -> None:
+    response = client.get("/evaluation")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "metrics": {
+            "accuracy": 0.9,
+            "precision": 0.85,
+            "recall": 0.95,
+            "f1": 0.9,
+            "roc_auc": 0.92,
+        },
+        "confusion_matrix": [[8, 1], [1, 10]],
+        "class_labels": [0, 1],
+        "test_size": 0.2,
+    }
+
+
+def test_evaluation_requires_a_model_trained_with_evaluation_data(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        main,
+        "load_model_bundle",
+        lambda: {"feature_names": ["feature_a", "feature_b"], "model": object()},
+    )
+
+    response = client.get("/evaluation")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Model evaluation data is unavailable. Retrain the model."
+    )
 
 
 def test_predict_returns_class_and_probabilities(client: TestClient) -> None:

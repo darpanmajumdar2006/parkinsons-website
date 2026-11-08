@@ -243,6 +243,45 @@
           </div>
         </section>
 
+        <section class="evaluation-section" aria-labelledby="evaluation-title">
+          <div class="workspace-heading">
+            <div>
+              <p class="eyebrow">MODEL PERFORMANCE</p>
+              <h2 id="evaluation-title">Random Forest evaluation</h2>
+            </div>
+            <span class="evaluation-badge">HELD-OUT TEST SET</span>
+          </div>
+          <p class="evaluation-description">
+            Metrics are measured on a stratified test split that was kept separate
+            from training. They describe the model evaluation, not an individual prediction.
+          </p>
+          <div class="evaluation-grid">
+            <section class="evaluation-panel panel" aria-labelledby="metrics-title">
+              <div class="evaluation-panel-heading">
+                <h3 id="metrics-title">Evaluation metrics</h3>
+                <span>20% test split</span>
+              </div>
+              <div class="metric-grid" id="metric-grid" aria-live="polite">
+                <div class="loading-state" role="status"><span class="spinner"></span> Loading model metrics…</div>
+              </div>
+            </section>
+            <section class="evaluation-panel panel" aria-labelledby="matrix-title">
+              <div class="evaluation-panel-heading">
+                <h3 id="matrix-title">Confusion matrix</h3>
+                <span>ACTUAL × PREDICTED</span>
+              </div>
+              <div class="confusion-matrix-wrap" id="confusion-matrix" aria-live="polite">
+                <div class="loading-state" role="status"><span class="spinner"></span> Loading confusion matrix…</div>
+              </div>
+              <p class="matrix-note">Rows are actual classes; columns are predicted classes.</p>
+            </section>
+          </div>
+          <p class="evaluation-disclaimer">
+            Research demonstration only. These holdout results are not clinical validation
+            and should not be used for medical decisions.
+          </p>
+        </section>
+
         <section class="bottom-strip">
           <div class="bottom-item"><span class="bottom-symbol">01</span><span><strong>Precomputed features</strong><small>Audio feature extraction is not included.</small></span></div>
           <span class="bottom-separator"></span>

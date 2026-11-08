@@ -9,6 +9,8 @@ const state = {
 const elements = {
   statusDot: document.querySelector("#status-dot"),
   serviceStatus: document.querySelector("#service-status"),
+  metricGrid: document.querySelector("#metric-grid"),
+  confusionMatrix: document.querySelector("#confusion-matrix"),
   uploadTab: document.querySelector("#upload-tab"),
   manualTab: document.querySelector("#manual-tab"),
   uploadPanel: document.querySelector("#upload-panel"),
@@ -69,6 +71,119 @@ async function loadFeatureSchema() {
     elements.featureGroups.innerHTML =
       '<p class="form-error">Could not load the model feature schema. Refresh this page or try again shortly.</p>';
     showFormError(error.message);
+  }
+}
+
+async function loadModelEvaluation() {
+  try {
+    const response = await fetch("/evaluation");
+    if (!response.ok) {
+      const body = await response.json();
+      throw new Error(
+        typeof body.detail === "string"
+          ? body.detail
+          : "Could not load model evaluation."
+      );
+    }
+
+    const evaluation = await response.json();
+    renderModelEvaluation(evaluation);
+  } catch (error) {
+    const message = error instanceof TypeError
+      ? "Could not reach the model evaluation service."
+      : error.message;
+    elements.metricGrid.textContent = message;
+    elements.metricGrid.classList.add("evaluation-error");
+    elements.confusionMatrix.textContent = message;
+    elements.confusionMatrix.classList.add("evaluation-error");
+  }
+}
+
+function renderModelEvaluation(evaluation) {
+  const metricLabels = [
+    ["accuracy", "Accuracy"],
+    ["precision", "Precision"],
+    ["recall", "Recall"],
+    ["f1", "F1 score"],
+    ["roc_auc", "ROC-AUC"],
+  ];
+  if (
+    !evaluation.metrics ||
+    !Array.isArray(evaluation.class_labels) ||
+    evaluation.class_labels.length !== 2 ||
+    !Array.isArray(evaluation.confusion_matrix) ||
+    evaluation.confusion_matrix.length !== 2 ||
+    evaluation.confusion_matrix.some(
+      (row) => !Array.isArray(row) || row.length !== 2 ||
+        row.some((value) => !Number.isInteger(value) || value < 0)
+    )
+  ) {
+    throw new Error("The model evaluation data has an unexpected format.");
+  }
+
+  const metricFragment = document.createDocumentFragment();
+  for (const [key, label] of metricLabels) {
+    const value = Number(evaluation.metrics[key]);
+    if (!Number.isFinite(value) || value < 0 || value > 1) {
+      throw new Error(`The ${label} value is missing or invalid.`);
+    }
+    const card = document.createElement("div");
+    card.className = "metric-card";
+    const name = document.createElement("span");
+    name.className = "metric-label";
+    name.textContent = label;
+    const score = document.createElement("strong");
+    score.className = "metric-value";
+    score.textContent = `${(value * 100).toFixed(1)}%`;
+    card.append(name, score);
+    metricFragment.append(card);
+  }
+  elements.metricGrid.replaceChildren(metricFragment);
+
+  const [negativeClass, positiveClass] = evaluation.class_labels;
+  const table = document.createElement("table");
+  table.className = "confusion-table";
+  const caption = document.createElement("caption");
+  caption.textContent = "Random Forest confusion matrix on held-out data";
+  table.append(caption);
+
+  const head = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.scope = "col";
+  corner.textContent = "Actual";
+  headerRow.append(corner);
+  for (const label of evaluation.class_labels) {
+    const header = document.createElement("th");
+    header.scope = "col";
+    header.textContent = `Predicted ${label}`;
+    headerRow.append(header);
+  }
+  head.append(headerRow);
+  table.append(head);
+
+  const body = document.createElement("tbody");
+  for (const [index, actualClass] of evaluation.class_labels.entries()) {
+    const row = document.createElement("tr");
+    const rowHeader = document.createElement("th");
+    rowHeader.scope = "row";
+    rowHeader.textContent = `Class ${actualClass}`;
+    row.append(rowHeader);
+    for (const value of evaluation.confusion_matrix[index]) {
+      const cell = document.createElement("td");
+      cell.textContent = String(value);
+      row.append(cell);
+    }
+    body.append(row);
+  }
+  table.append(body);
+  elements.confusionMatrix.replaceChildren(table);
+  const testPercent = Number(evaluation.test_size) * 100;
+  if (Number.isFinite(testPercent) && testPercent > 0 && testPercent < 100) {
+    document.querySelector(".evaluation-badge").textContent =
+      `${testPercent.toFixed(0)}% HELD-OUT TEST SET`;
+    document.querySelector(".evaluation-panel-heading span").textContent =
+      `${testPercent.toFixed(0)}% test split`;
   }
 }
 
@@ -515,3 +630,4 @@ document.addEventListener("keydown", (event) => {
 });
 
 loadFeatureSchema();
+loadModelEvaluation();

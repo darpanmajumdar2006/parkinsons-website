@@ -7,6 +7,7 @@ import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     accuracy_score,
+    confusion_matrix,
     f1_score,
     precision_score,
     recall_score,
@@ -24,6 +25,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATASET_PATH = PROJECT_ROOT / "data" / "pd_dataset.csv"
 DEFAULT_MODEL_PATH = PROJECT_ROOT / "models" / "parkinsons_model.joblib"
 DEFAULT_METRICS_PATH = PROJECT_ROOT / "models" / "metrics.json"
+TEST_SIZE = 0.2
 
 
 def build_model() -> Pipeline:
@@ -53,7 +55,7 @@ def train(
     x_train, x_test, y_train, y_test = train_test_split(
         features,
         target,
-        test_size=0.2,
+        test_size=TEST_SIZE,
         random_state=42,
         stratify=target,
     )
@@ -71,6 +73,16 @@ def train(
         "f1": float(f1_score(y_test, predictions, zero_division=0)),
         "roc_auc": float(roc_auc_score(y_test, probabilities)),
     }
+    evaluation = {
+        "metrics": metrics,
+        "confusion_matrix": confusion_matrix(
+            y_test,
+            predictions,
+            labels=evaluation_model.classes_,
+        ).tolist(),
+        "class_labels": [int(label) for label in evaluation_model.classes_],
+        "test_size": TEST_SIZE,
+    }
 
     final_model = build_model()
     final_model.fit(features, target)
@@ -82,13 +94,17 @@ def train(
         "target_column": "class",
         "sklearn_version": sklearn_version,
         "metrics": metrics,
+        "evaluation": evaluation,
         "trained_at_utc": datetime.now(timezone.utc).isoformat(),
     }
 
     model_path.parent.mkdir(parents=True, exist_ok=True)
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(artifact, model_path)
-    metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    metrics_path.write_text(
+        json.dumps(evaluation, indent=2) + "\n",
+        encoding="utf-8",
+    )
     return metrics
 
 
