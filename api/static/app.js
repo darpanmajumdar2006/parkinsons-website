@@ -37,6 +37,9 @@ const elements = {
   resultError: document.querySelector("#result-error"),
   predictionClass: document.querySelector("#prediction-class"),
   probabilityList: document.querySelector("#probability-list"),
+  shapStatus: document.querySelector("#shap-status"),
+  shapSummary: document.querySelector("#shap-summary"),
+  shapFeatureList: document.querySelector("#shap-feature-list"),
   resultTimestamp: document.querySelector("#result-timestamp"),
   anotherButton: document.querySelector("#another-button"),
 };
@@ -508,6 +511,7 @@ async function runPrediction() {
       throw new Error(detail);
     }
     renderPrediction(body);
+    await loadPredictionExplanation(features);
   } catch (error) {
     showResultError(
       error instanceof TypeError
@@ -519,6 +523,108 @@ async function runPrediction() {
     elements.resultPanel.setAttribute("aria-busy", "false");
     elements.analyzeButton.disabled = false;
   }
+}
+
+async function loadPredictionExplanation(features) {
+  elements.shapStatus.textContent = "Calculating feature contributions…";
+  elements.shapStatus.className = "shap-status loading";
+  elements.shapSummary.textContent = "";
+  elements.shapFeatureList.replaceChildren();
+
+  try {
+    const response = await fetch("/explain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ features }),
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      const detail = typeof body.detail === "string"
+        ? body.detail
+        : "Could not calculate feature contributions.";
+      throw new Error(detail);
+    }
+    renderExplanation(body);
+  } catch (error) {
+    elements.shapStatus.textContent = error instanceof TypeError
+      ? "Explanation service unavailable"
+      : "Explanation unavailable";
+    elements.shapStatus.className = "shap-status error";
+    elements.shapSummary.textContent = error instanceof TypeError
+      ? "Could not reach the explanation service."
+      : error.message;
+  }
+}
+
+function renderExplanation(explanation) {
+  if (
+    !Number.isInteger(explanation.prediction) ||
+    !Number.isFinite(explanation.class_probability) ||
+    !Number.isFinite(explanation.base_value) ||
+    !Array.isArray(explanation.contributions) ||
+    explanation.contributions.length === 0 ||
+    explanation.contributions.some((item) =>
+      typeof item.feature_name !== "string" ||
+      !Number.isFinite(item.feature_value) ||
+      !Number.isFinite(item.shap_value)
+    )
+  ) {
+    throw new Error("The explanation service returned an unexpected response.");
+  }
+
+  const probability = Number(explanation.class_probability);
+  const baseline = Number(explanation.base_value);
+  elements.shapSummary.textContent =
+    `For Class ${explanation.prediction}, the model output is ` +
+    `${(probability * 100).toFixed(1)}%; its average baseline is ` +
+    `${(baseline * 100).toFixed(1)}%. Positive contributions push toward ` +
+    `Class ${explanation.prediction}; negative contributions push away.`;
+
+  const maxContribution = Math.max(
+    ...explanation.contributions.map((item) => Math.abs(item.shap_value)),
+    Number.EPSILON
+  );
+  const fragment = document.createDocumentFragment();
+  for (const item of explanation.contributions) {
+    const row = document.createElement("div");
+    row.className = "shap-row";
+
+    const details = document.createElement("div");
+    details.className = "shap-feature-details";
+    const name = document.createElement("span");
+    name.className = "shap-feature-name";
+    name.textContent = item.feature_name;
+    const inputValue = document.createElement("span");
+    inputValue.className = "shap-input-value";
+    inputValue.textContent = `Input: ${Number(item.feature_value.toPrecision(5))}`;
+    details.append(name, inputValue);
+
+    const track = document.createElement("div");
+    track.className = "shap-track";
+    track.setAttribute("aria-hidden", "true");
+    const fill = document.createElement("span");
+    const contributionWidth =
+      Math.abs(item.shap_value) / maxContribution * 50;
+    fill.className = `shap-bar ${item.shap_value >= 0 ? "positive" : "negative"}`;
+    fill.style.width = `${contributionWidth}%`;
+    fill.style.left = item.shap_value >= 0 ? "50%" : `${50 - contributionWidth}%`;
+    track.append(fill);
+
+    const contribution = document.createElement("span");
+    contribution.className = `shap-value ${item.shap_value >= 0 ? "positive" : "negative"}`;
+    const points = item.shap_value * 100;
+    contribution.textContent = `${points >= 0 ? "+" : ""}${points.toFixed(2)} pp`;
+    contribution.setAttribute(
+      "aria-label",
+      `${points >= 0 ? "increases" : "decreases"} the class probability by ` +
+      `${Math.abs(points).toFixed(2)} percentage points`
+    );
+    row.append(details, track, contribution);
+    fragment.append(row);
+  }
+  elements.shapFeatureList.replaceChildren(fragment);
+  elements.shapStatus.textContent = "SHAP · top 8 features";
+  elements.shapStatus.className = "shap-status";
 }
 
 function renderPrediction(result) {
@@ -566,6 +672,10 @@ function renderPrediction(result) {
   }).format(new Date());
   elements.resultError.hidden = true;
   elements.resultContent.hidden = false;
+  elements.shapStatus.textContent = "Waiting for explanation…";
+  elements.shapStatus.className = "shap-status loading";
+  elements.shapSummary.textContent = "";
+  elements.shapFeatureList.replaceChildren();
 }
 
 function clearPrediction() {
@@ -573,6 +683,10 @@ function clearPrediction() {
   elements.resultError.hidden = true;
   elements.resultEmpty.hidden = false;
   elements.resultTimestamp.textContent = "";
+  elements.shapStatus.textContent = "Waiting for prediction";
+  elements.shapStatus.className = "shap-status";
+  elements.shapSummary.textContent = "";
+  elements.shapFeatureList.replaceChildren();
   window.scrollTo({ top: document.querySelector(".workspace").offsetTop, behavior: "smooth" });
 }
 

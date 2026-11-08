@@ -48,6 +48,7 @@ def test_frontend_is_served_at_root(client: TestClient) -> None:
     assert 'property="og:image:alt"' in response.text
     assert 'href="#workspace"' in response.text
     assert 'id="evaluation-title"' in response.text
+    assert 'id="shap-feature-list"' in response.text
     assert "/styles.css" in response.text
     assert "/docs" not in response.text
     assert "Developer API" not in response.text
@@ -113,6 +114,7 @@ def test_frontend_assets_are_served(client: TestClient) -> None:
     assert ".confusion-table" in css_response.text
     assert js_response.status_code == 200
     assert 'fetch("/predict"' in js_response.text
+    assert 'fetch("/explain"' in js_response.text
     assert 'fetch("/evaluation")' in js_response.text
     for asset in (
         "/favicon.svg",
@@ -189,6 +191,56 @@ def test_predict_returns_class_and_probabilities(client: TestClient) -> None:
 def test_predict_rejects_missing_or_unexpected_features(client: TestClient) -> None:
     response = client.post(
         "/predict",
+        json={"features": {"feature_a": 0.25, "unexpected": 0.75}},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == {
+        "missing_features": ["feature_b"],
+        "unexpected_features": ["unexpected"],
+    }
+
+
+def test_explain_returns_feature_attributions(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    explanation = main.ExplanationResponse(
+        prediction=1,
+        class_probability=1.0,
+        base_value=0.7,
+        contributions=[
+            main.FeatureContribution(
+                feature_name="feature_a",
+                feature_value=0.25,
+                shap_value=0.1,
+            )
+        ],
+    )
+    monkeypatch.setattr(main, "explain_prediction", lambda *args: explanation)
+
+    response = client.post(
+        "/explain",
+        json={"features": {"feature_a": 0.25, "feature_b": 0.75}},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "prediction": 1,
+        "class_probability": 1.0,
+        "base_value": 0.7,
+        "contributions": [
+            {
+                "feature_name": "feature_a",
+                "feature_value": 0.25,
+                "shap_value": 0.1,
+            }
+        ],
+    }
+
+
+def test_explain_rejects_missing_or_unexpected_features(client: TestClient) -> None:
+    response = client.post(
+        "/explain",
         json={"features": {"feature_a": 0.25, "unexpected": 0.75}},
     )
 

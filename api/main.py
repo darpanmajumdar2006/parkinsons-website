@@ -7,7 +7,9 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import joblib
+import numpy as np
 import pandas as pd
+import shap
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -56,6 +58,19 @@ class EvaluationResponse(BaseModel):
     test_size: float
 
 
+class FeatureContribution(BaseModel):
+    feature_name: str
+    feature_value: float
+    shap_value: float
+
+
+class ExplanationResponse(BaseModel):
+    prediction: int
+    class_probability: float
+    base_value: float
+    contributions: list[FeatureContribution]
+
+
 @lru_cache(maxsize=1)
 def load_model_bundle() -> dict[str, Any]:
     model_path = Path(os.environ.get("MODEL_PATH", DEFAULT_MODEL_PATH))
@@ -68,6 +83,81 @@ def load_model_bundle() -> dict[str, Any]:
             ),
         )
     return joblib.load(model_path)
+
+
+@lru_cache(maxsize=1)
+def load_shap_explainer() -> Any:
+    bundle = load_model_bundle()
+    model = bundle["model"]
+    return shap.TreeExplainer(model.named_steps["model"])
+
+
+def explain_prediction(
+    bundle: dict[str, Any],
+    input_frame: pd.DataFrame,
+    predicted_class: int,
+    class_probability: float,
+) -> ExplanationResponse:
+    model = bundle["model"]
+    class_labels = [int(label) for label in model.classes_]
+    try:
+        class_index = class_labels.index(predicted_class)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="The model returned an unknown class for its explanation.",
+        ) from exc
+
+    scaled_features = model.named_steps["scaler"].transform(input_frame)
+    explainer = load_shap_explainer()
+    raw_values = explainer.shap_values(scaled_features)
+    if isinstance(raw_values, list):
+        class_values = np.asarray(raw_values[class_index])[0]
+    else:
+        values = np.asarray(raw_values)
+        if values.ndim == 3 and values.shape[0] == 1:
+            class_values = values[0, :, class_index]
+        else:
+            raise HTTPException(
+                status_code=503,
+                detail="The SHAP explainer returned an unsupported output shape.",
+            )
+
+    expected_values = np.asarray(explainer.expected_value).reshape(-1)
+    if class_index >= len(expected_values):
+        raise HTTPException(
+            status_code=503,
+            detail="The SHAP explainer did not return a baseline for this class.",
+        )
+    base_value = float(expected_values[class_index])
+    if not math.isclose(
+        base_value + float(np.sum(class_values)),
+        class_probability,
+        rel_tol=1e-4,
+        abs_tol=1e-4,
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="SHAP contributions did not match the model output.",
+        )
+
+    feature_values = input_frame.iloc[0].to_numpy(dtype=float)
+    feature_names = bundle["feature_names"]
+    top_indexes = np.argsort(np.abs(class_values))[-8:][::-1]
+    contributions = [
+        FeatureContribution(
+            feature_name=feature_names[index],
+            feature_value=float(feature_values[index]),
+            shap_value=float(class_values[index]),
+        )
+        for index in top_indexes
+    ]
+    return ExplanationResponse(
+        prediction=predicted_class,
+        class_probability=class_probability,
+        base_value=base_value,
+        contributions=contributions,
+    )
 
 
 @app.get("/health")
@@ -179,6 +269,36 @@ def predict(request: PredictionRequest) -> PredictionResponse:
     return PredictionResponse(
         prediction=prediction,
         probabilities=class_probabilities,
+    )
+
+
+@app.post("/explain", response_model=ExplanationResponse)
+def explain(request: PredictionRequest) -> ExplanationResponse:
+    bundle = load_model_bundle()
+    feature_names = bundle["feature_names"]
+    supplied_names = set(request.features)
+    expected_names = set(feature_names)
+    missing = sorted(expected_names - supplied_names)
+    extra = sorted(supplied_names - expected_names)
+    if missing or extra:
+        raise HTTPException(
+            status_code=422,
+            detail={"missing_features": missing, "unexpected_features": extra},
+        )
+
+    input_frame = pd.DataFrame(
+        [[request.features[name] for name in feature_names]],
+        columns=feature_names,
+    )
+    model = bundle["model"]
+    probabilities = model.predict_proba(input_frame)[0]
+    prediction = int(model.predict(input_frame)[0])
+    class_index = [int(label) for label in model.classes_].index(prediction)
+    return explain_prediction(
+        bundle,
+        input_frame,
+        prediction,
+        float(probabilities[class_index]),
     )
 
 

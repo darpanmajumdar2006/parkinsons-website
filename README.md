@@ -64,6 +64,7 @@ classifier is a class-balanced random forest with 200 trees.
 | `/schema` | Required model feature names |
 | `/evaluation` | Saved held-out metrics and confusion matrix |
 | `/predict` | JSON prediction endpoint |
+| `/explain` | SHAP feature contributions for one prediction |
 | `/robots.txt` | Crawler rules |
 | `/sitemap.xml` | Public website URLs |
 
@@ -94,6 +95,19 @@ object is not sufficient for a real request):
 The response contains a `prediction` (`0` or `1`) and a `probabilities` object
 keyed by class. These probabilities are model outputs, not medical confidence
 or clinical evidence.
+
+After a prediction, the website requests a local SHAP explanation from
+`POST /explain` using the same feature values. The response includes the
+predicted class probability, its baseline, and the eight largest feature
+contributions. SHAP values are expressed in probability points; the full set of
+feature contributions sums with the baseline to the predicted class
+probability. They explain this model's output only; they do not identify
+medical causes or provide a diagnosis.
+
+The explanation is calculated on the server with SHAP's `TreeExplainer` for the
+Random Forest. It is a local, per-input explanation; it does not change the
+model's prediction. If explanation generation is unavailable, the prediction
+still appears and the explanation panel reports that it could not be loaded.
 
 ## Deploy to Render
 
@@ -149,7 +163,8 @@ parkinsons-mlops/
 │   └── train.py
 ├── tests/
 │   ├── test_api.py
-│   └── test_train.py
+│   ├── test_train.py
+│   └── test_explainability.py
 ├── Dockerfile
 ├── render.yaml
 └── requirements.txt

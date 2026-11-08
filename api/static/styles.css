@@ -143,6 +143,26 @@ select { height: 36px; padding: 0 10px; font-size: 10px; }.field-help { color: v
 .result-loading { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 80px 15px; color: var(--muted); }.result-loading .spinner { width: 26px; height: 26px; border-width: 3px; }.result-loading strong { color: var(--ink); font: 700 12px "Manrope", sans-serif; }.result-loading span:last-child { font-size: 9px; }
 .result-content { position: relative; padding: 31px 7px 0; }.result-kicker { color: var(--muted); font-size: 8px; font-weight: 700; letter-spacing: 1.1px; }.prediction-class { margin-top: 7px; font: 800 31px/1.2 "Manrope", sans-serif; letter-spacing: -1.3px; color: var(--green-deep); }.result-caption { color: var(--muted); font-size: 9px; margin: 5px 0 27px; }.probability-heading { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #edf0ed; padding-bottom: 9px; }.probability-heading h4 { margin: 0; font: 700 10px "Manrope", sans-serif; }.probability-heading span { font-size: 7px; letter-spacing: .8px; color: #a2ada5; font-weight: 700; }
 .probability-list { display: grid; gap: 16px; padding: 14px 0 17px; }.probability-row { display: grid; grid-template-columns: 60px 1fr 38px; align-items: center; gap: 10px; }.probability-label { color: var(--ink-soft); font-size: 9px; font-weight: 600; }.probability-track { height: 6px; border-radius: 6px; background: #edf1ed; overflow: hidden; }.probability-fill { height: 100%; border-radius: inherit; background: #72a986; transition: width .65s ease; }.probability-row:nth-child(2n) .probability-fill { background: #b8cdbb; }.probability-value { text-align: right; color: var(--ink); font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.shap-explanation { margin-top: 20px; padding: 15px 12px; border: 1px solid #e8ede9; border-radius: 8px; background: #fbfcfb; }
+.shap-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.shap-heading h4 { margin: 0; color: var(--ink); font: 700 11px "Manrope", sans-serif; }
+.shap-status { color: var(--green); font-size: 8px; font-weight: 700; }
+.shap-status.loading { color: var(--muted); }
+.shap-status.error { color: #aa423c; }
+.shap-summary { margin: 8px 0 12px; color: var(--ink-soft); font-size: 9px; line-height: 1.6; }
+.shap-feature-list { display: grid; gap: 9px; }
+.shap-row { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(60px, 1.1fr) 63px; align-items: center; gap: 8px; }
+.shap-feature-details { display: grid; gap: 2px; min-width: 0; }
+.shap-feature-name { overflow: hidden; color: var(--ink-soft); font-size: 8px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.shap-input-value { color: var(--muted); font-size: 7px; font-variant-numeric: tabular-nums; }
+.shap-track { position: relative; height: 8px; border-radius: 5px; background: linear-gradient(90deg, #f3e8df 0 49.5%, #e7ece8 49.5% 50.5%, #e1efe4 50.5%); }
+.shap-bar { position: absolute; top: 1px; bottom: 1px; border-radius: 4px; }
+.shap-bar.positive { background: #5a9a70; }
+.shap-bar.negative { background: #c17a51; }
+.shap-value { text-align: right; font-size: 8px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.shap-value.positive { color: var(--green-deep); }
+.shap-value.negative { color: #a45b37; }
+.shap-note { margin: 11px 0 0; color: var(--muted); font-size: 8px; line-height: 1.6; }
 .result-foot { display: flex; align-items: center; gap: 7px; padding: 11px 0; border-top: 1px solid #edf0ed; color: var(--muted); font-size: 9px; }.result-check { width: 14px; height: 14px; border-radius: 50%; display: grid; place-items: center; color: var(--green); background: var(--green-pale); font-size: 8px; }.result-timestamp { margin-left: auto; font-size: 8px; color: #a6b0a9; }.another-button { width: 100%; margin-top: 8px; }
 .result-error { position: relative; margin-top: 22px; color: #aa423c; background: #fff4f2; border: 1px solid #f4d8d4; border-radius: 7px; padding: 12px; font-size: 10px; line-height: 1.6; }
 

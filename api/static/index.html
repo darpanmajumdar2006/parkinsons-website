@@ -220,7 +220,7 @@
               <div class="result-loading" id="result-loading" role="status" aria-live="polite" hidden>
                 <span class="spinner"></span>
                 <strong>Analyzing feature vector</strong>
-                <span>Sending securely to the prediction API…</span>
+                <span>Generating prediction and local explanation…</span>
               </div>
               <div class="result-content" id="result-content" hidden>
                 <div class="result-kicker">PREDICTED MODEL CLASS</div>
@@ -231,6 +231,18 @@
                   <span>MODEL CONFIDENCE</span>
                 </div>
                 <div class="probability-list" id="probability-list"></div>
+                <section class="shap-explanation" aria-labelledby="shap-title">
+                  <div class="shap-heading">
+                    <h4 id="shap-title">Why this prediction?</h4>
+                    <span class="shap-status" id="shap-status" role="status" aria-live="polite">Waiting for prediction</span>
+                  </div>
+                  <p class="shap-summary" id="shap-summary"></p>
+                  <div class="shap-feature-list" id="shap-feature-list"></div>
+                  <p class="shap-note">
+                    SHAP shows how features influenced this model output for this sample.
+                    It does not show medical causes or provide a diagnosis.
+                  </p>
+                </section>
                 <div class="result-foot">
                   <span class="result-check" aria-hidden="true">✓</span>
                   <span>Analysis complete</span>
